@@ -10,12 +10,18 @@ export const metadata: Metadata = {
     "This is Next.js Line Chart page for TailAdmin - Next.js Tailwind CSS Admin Dashboard Template",
 };
 export default function LineChart() {
+  const sampleData = [
+    { name: 'Jan', value: 10 },
+    { name: 'Feb', value: 15 },
+    { name: 'Mar', value: 8 },
+    { name: 'Apr', value: 20 },
+  ];
   return (
     <div>
       <PageBreadcrumb pageTitle="Line Chart" />
       <div className="space-y-6">
         <ComponentCard title="Line Chart 1">
-          <LineChartOne />
+          <LineChartOne data={sampleData} />
         </ComponentCard>
       </div>
     </div>

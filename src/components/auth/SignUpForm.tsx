@@ -31,8 +31,12 @@ export default function SignUpForm() {
       if (!res.ok) throw new Error(data.error || 'Registration failed');
       setSuccess('Registration successful!');
       setForm({ name: '', email: '', password: '', type: 'user' });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     }
   };
 

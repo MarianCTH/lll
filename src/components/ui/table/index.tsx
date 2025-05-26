@@ -18,12 +18,6 @@ interface TableBodyProps {
   className?: string; // Optional className for styling
 }
 
-// Props for TableRow
-interface TableRowProps {
-  children: ReactNode; // Cells (th or td)
-  className?: string; // Optional className for styling
-}
-
 // Props for TableCell
 interface TableCellProps {
   children: ReactNode; // Cell content
@@ -56,6 +50,7 @@ const TableRow = forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableR
     );
   }
 );
+TableRow.displayName = 'TableRow';
 
 // TableCell Component
 const TableCell: React.FC<TableCellProps> = ({

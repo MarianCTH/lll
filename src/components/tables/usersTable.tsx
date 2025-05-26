@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -33,7 +33,7 @@ export default function UsersTable() {
   const [sortBy, setSortBy] = useState<'name' | 'email' | 'type' | 'created_at'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     const offset = (currentPage - 1) * itemsPerPage;
     const params = new URLSearchParams({
       limit: itemsPerPage.toString(),
@@ -49,14 +49,14 @@ export default function UsersTable() {
       if (!res.ok) throw new Error('Failed to fetch users');
       const data = await res.json();
       setUsers(data);
-    } catch (error) {
-      console.error('Error fetching users:', error);
+    } catch {
+      console.error('Error fetching users');
     }
-  };
+  }, [currentPage, itemsPerPage, filterName, filterEmail, filterType, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, filterName, filterEmail, filterType, sortBy, sortOrder]);
+  }, [currentPage, filterName, filterEmail, filterType, sortBy, sortOrder, fetchUsers]);
 
   const handleEditClick = (user: User) => {
     setEditingUser(user);
@@ -78,7 +78,7 @@ export default function UsersTable() {
       setShowEditForm(false);
       setEditingUser(null);
       fetchUsers();
-    } catch (err) {
+    } catch {
       alert('Failed to update user');
     }
   };
@@ -95,7 +95,7 @@ export default function UsersTable() {
       if (!res.ok) throw new Error('Failed to delete user');
       setDeleteId(null);
       fetchUsers();
-    } catch (err) {
+    } catch {
       alert('Failed to delete user');
     }
   };

@@ -37,8 +37,12 @@ export default function SignInForm() {
       // Save user info to localStorage
       localStorage.setItem('user', JSON.stringify(data));
       router.push('/users');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     }
   };
 

@@ -121,19 +121,13 @@ describe('UsersTable Component', () => {
     test('should sort users by name', async () => {
       render(<UsersTable />);
       
-      // Get initial order of first user
-      const initialFirstUser = screen.getByText(/Lindsey Curtis/);
-      
       // Click sort button
       await act(async () => {
         fireEvent.click(screen.getByText(/Sort by Name/));
       });
       
       // Get new order of first user
-      const newFirstUser = screen.getByText(/Lindsey Curtis/);
-      
-      // Check if order changed
-      expect(initialFirstUser).toBeTruthy();
+      screen.getByText(/Lindsey Curtis/);
     });
   });
 
