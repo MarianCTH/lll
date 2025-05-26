@@ -5,6 +5,7 @@ import Label from "@/components/form/Label";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,6 +13,7 @@ export default function SignUpForm() {
   const [form, setForm] = useState({ name: '', email: '', password: '', type: 'user' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -29,8 +31,22 @@ export default function SignUpForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Registration failed');
+      
       setSuccess('Registration successful!');
       setForm({ name: '', email: '', password: '', type: 'user' });
+      
+      // Store user data and token
+      const userData = {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        type: data.user.type
+      };
+      
+      localStorage.setItem('token', data.accessToken);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      router.push('/users');
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

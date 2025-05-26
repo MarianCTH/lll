@@ -14,6 +14,9 @@ export default function SignInForm() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState('');
+  const [tempToken, setTempToken] = useState('');
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,6 +27,7 @@ export default function SignInForm() {
     e.preventDefault();
     setError('');
     setSuccess('');
+
     try {
       const res = await fetch('http://localhost:5000/login', {
         method: 'POST',
@@ -31,11 +35,68 @@ export default function SignInForm() {
         body: JSON.stringify(form),
       });
       const data = await res.json();
+
       if (!res.ok) throw new Error(data.error || 'Login failed');
+
+      if (data.requiresTwoFactor) {
+        setShowTwoFactor(true);
+        setTempToken(data.tempToken);
+        return;
+      }
+
+      // Only store user data if it exists
+      if (data.user && data.accessToken) {
+        setSuccess('Login successful!');
+        setForm({ email: '', password: '' });
+        const userData = {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+          type: data.user.type
+        };
+        localStorage.setItem('token', data.accessToken);
+        localStorage.setItem('user', JSON.stringify(userData));
+        router.push('/users');
+      } else {
+        setError('Login response missing user data.');
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
+    }
+  };
+
+  const handleTwoFactorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    try {
+      const res = await fetch('http://localhost:5000/2fa/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tempToken}`
+        },
+        body: JSON.stringify({ token: twoFactorToken }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || '2FA verification failed');
+
       setSuccess('Login successful!');
-      setForm({ email: '', password: '' });
-      // Save user info to localStorage
-      localStorage.setItem('user', JSON.stringify(data));
+      localStorage.setItem('token', data.accessToken);
+      // Fetch user info after 2FA verification
+      const userRes = await fetch('http://localhost:5000/users/me', {
+        headers: { 'Authorization': `Bearer ${data.accessToken}` }
+      });
+      if (userRes.ok) {
+        const user = await userRes.json();
+        localStorage.setItem('user', JSON.stringify(user));
+      }
       router.push('/users');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -45,6 +106,47 @@ export default function SignInForm() {
       }
     }
   };
+
+  if (showTwoFactor) {
+    return (
+      <div className="flex flex-col flex-1 lg:w-1/2 w-full">
+        <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
+          <div>
+            <div className="mb-5 sm:mb-8">
+              <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
+                Two-Factor Authentication
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Please enter the 6-digit code from your authenticator app
+              </p>
+            </div>
+            <form onSubmit={handleTwoFactorSubmit}>
+              <div className="space-y-6">
+                <div>
+                  <Label>
+                    Authentication Code <span className="text-error-500">*</span>
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={twoFactorToken}
+                    onChange={(e) => setTwoFactorToken(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Button className="w-full" size="sm" type="submit">
+                    Verify
+                  </Button>
+                </div>
+                {error && <div className="text-red-500">{error}</div>}
+                {success && <div className="text-green-500">{success}</div>}
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col flex-1 lg:w-1/2 w-full">

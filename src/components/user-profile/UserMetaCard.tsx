@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
@@ -10,11 +10,58 @@ import Image from "next/image";
 
 export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
+  const [qrCode, setQrCode] = useState('');
+  const [secret, setSecret] = useState('');
+  const [token, setToken] = useState('');
+  const [message, setMessage] = useState('');
+  const [show2FA, setShow2FA] = useState(false);
+
   const handleSave = () => {
     // Handle save logic here
     console.log("Saving changes...");
     closeModal();
   };
+
+  const handleSetup2FA = async () => {
+    setMessage('');
+    const jwt = localStorage.getItem('token');
+    const res = await fetch('http://localhost:5000/2fa/setup', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${jwt}` }
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setQrCode(data.qrCode);
+      setSecret(data.secret);
+      setShow2FA(true);
+    } else {
+      setMessage(data.error || 'Failed to start 2FA setup');
+    }
+  };
+
+  const handleVerify2FA = async () => {
+    setMessage('');
+    const jwt = localStorage.getItem('token');
+    const res = await fetch('http://localhost:5000/2fa/verify', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${jwt}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ token })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setMessage('2FA enabled!');
+      setShow2FA(false);
+      setQrCode('');
+      setSecret('');
+      setToken('');
+    } else {
+      setMessage(data.error || 'Verification failed');
+    }
+  };
+
   return (
     <>
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
@@ -215,6 +262,32 @@ export default function UserMetaCard() {
                     <Input type="text" defaultValue="Team Manager" />
                   </div>
                 </div>
+              </div>
+              <div className="mt-7">
+                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
+                  Two-Factor Authentication (2FA)
+                </h5>
+                {!show2FA && !qrCode && (
+                  <Button size="sm" onClick={handleSetup2FA} type="button">
+                    Enable Two-Factor Authentication
+                  </Button>
+                )}
+                {qrCode && show2FA && (
+                  <div className="flex flex-col items-start gap-3 mt-4">
+                    <img src={qrCode} alt="Scan this QR code" style={{ width: 180, height: 180 }} />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Secret: {secret}</p>
+                    <Input
+                      type="text"
+                      placeholder="Enter 6-digit code from your app"
+                      value={token}
+                      onChange={e => setToken(e.target.value)}
+                    />
+                    <Button size="sm" onClick={handleVerify2FA} type="button">
+                      Verify 2FA Code
+                    </Button>
+                  </div>
+                )}
+                {message && <p className="mt-2 text-sm text-red-500">{message}</p>}
               </div>
             </div>
             <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
